@@ -2,14 +2,11 @@ pipeline {
     agent any
 
     environment {
-        // Use the credentials you added in Jenkins (username + token)
-        DOCKERHUB = credentials('dockerhub-credentials-id')
-        IMAGE     = "your-dockerhub-username/your-app"
-        TAG       = "${env.BUILD_NUMBER}"   // use build number as tag
+        DOCKER_HUB_REPO = "gopalakrishnan045/ecommerce"
     }
 
     stages {
-        stage('Checkout') {
+        stage('Checkout Code') {
             steps {
                 git branch: 'main', url: 'https://github.com/Gopalakrishnan045/E-commerce-web.git'
             }
@@ -17,30 +14,30 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh "docker build -t ${IMAGE}:${TAG} ."
+                script {
+                    dockerImage = docker.build("${DOCKER_HUB_REPO}:${BUILD_NUMBER}")
+                }
             }
         }
 
         stage('Push to DockerHub') {
             steps {
-                sh """
-                  echo ${DOCKERHUB_PSW} | docker login -u ${DOCKERHUB_USR} --password-stdin
-                  docker push ${IMAGE}:${TAG}
-                  # also tag latest
-                  docker tag ${IMAGE}:${TAG} ${IMAGE}:latest
-                  docker push ${IMAGE}:latest
-                """
+                script {
+                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials') {
+                        dockerImage.push()
+                    }
+                }
             }
         }
 
         stage('Deploy Container') {
             steps {
                 sh """
-                  docker rm -f myapp || true
-                  docker run -d --name myapp -p 8080:8080 ${IMAGE}:${TAG}
+                docker stop web || true
+                docker rm web || true
+                docker run -d --name web -p 4200:4200 ${DOCKER_HUB_REPO}:${BUILD_NUMBER}
                 """
             }
         }
     }
 }
-
