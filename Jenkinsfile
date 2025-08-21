@@ -35,7 +35,7 @@ pipeline {
                 sh """
                 docker stop web || true
                 docker rm web || true
-                docker run -d --name web -p 4200:4200 ${DOCKER_HUB_REPO}:${BUILD_NUMBER}
+                docker run -d --name web -p 5000:5000 ${DOCKER_HUB_REPO}:${BUILD_NUMBER}
                 """
             }
         }
